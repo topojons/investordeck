@@ -1,0 +1,120 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String            @id @default(cuid())
+  email             String            @unique
+  passwordHash      String?
+  name              String
+  googleId          String?
+  avatarUrl         String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  savedProperties   SavedProperty[]
+  savedSearches     SavedSearch[]
+  dealAnalyses      DealAnalysis[]
+
+  @@index([email])
+}
+
+model SavedProperty {
+  id                String            @id @default(cuid())
+  userId            String
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  propertyAddress   String
+  propertyData      Json
+  pipelineStage     PipelineStage     @default(RESEARCHING)
+  notes             String?
+  tags              String[]
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@index([userId])
+  @@index([pipelineStage])
+}
+
+model SavedSearch {
+  id                String            @id @default(cuid())
+  userId            String
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name              String
+  searchCriteria    Json
+  alertEnabled      Boolean           @default(false)
+  createdAt         DateTime          @default(now())
+
+  @@index([userId])
+}
+
+model DealAnalysis {
+  id                String            @id @default(cuid())
+  userId            String
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  propertyAddress   String
+  calculatorType    CalculatorType
+  inputs            Json
+  outputs           Json
+  createdAt         DateTime          @default(now())
+
+  @@index([userId])
+  @@index([calculatorType])
+}
+
+model MarketSnapshot {
+  id                String            @id @default(cuid())
+  zipCode           String
+  city              String
+  state             String
+  data              Json
+  snapshotDate      DateTime          @default(now())
+  createdAt         DateTime          @default(now())
+
+  @@unique([zipCode, snapshotDate])
+  @@index([zipCode])
+}
+
+model FeaturedDeal {
+  id                String            @id @default(cuid())
+  propertyAddress   String
+  dealType          DealType
+  propertyData      Json
+  featuredDate      DateTime          @default(now())
+  expiresAt         DateTime
+
+  @@index([dealType])
+  @@index([expiresAt])
+}
+
+enum PipelineStage {
+  RESEARCHING
+  ANALYZING
+  MAKING_OFFER
+  UNDER_CONTRACT
+  CLOSED
+}
+
+enum CalculatorType {
+  FLIP
+  RENTAL
+  WHOLESALE
+  BRRRR
+  MORTGAGE
+}
+
+enum DealType {
+  FSBO
+  FORECLOSURE
+  AUCTION
+  SHORT_SALE
+  REO
+  TAX_LIEN
+}
