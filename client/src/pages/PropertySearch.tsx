@@ -1,31 +1,72 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { Search, MapPin, Home, DollarSign } from 'lucide-react'
+import { Search, MapPin, Home } from 'lucide-react'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Select from '@/components/ui/Select'
 import Badge from '@/components/ui/Badge'
 import Skeleton from '@/components/ui/Skeleton'
-import { searchProperties } from '@/services/properties'
+import apiClient from '@/services/api'
 import { useSearchStore } from '@/store/searchStore'
 import { PROPERTY_TYPES, STATES } from '@/utils/constants'
-import { formatCurrency, formatSqft } from '@/utils/formatters'
+import { formatCurrency, formatNumber } from '@/utils/formatters'
 import { Link } from 'react-router-dom'
+
+interface SearchResult {
+  id: string
+  address: string
+  city: string
+  state: string
+  zip: string
+  price: number
+  beds: number
+  baths: number
+  sqft: number
+  yearBuilt: number
+  type: string
+  imageUrl: string
+  description: string
+}
 
 export default function PropertySearch() {
   const { filters, setFilters } = useSearchStore()
-  const [submitted, setSubmitted] = useState(false)
+  const [results, setResults] = useState<SearchResult[]>([])
+  const [total, setTotal] = useState(0)
+  const [isLoading, setIsLoading] = useState(false)
+  const [searched, setSearched] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const { data: results, isLoading } = useQuery({
-    queryKey: ['properties', filters],
-    queryFn: () => searchProperties(filters),
-    enabled: submitted,
-  })
-
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault()
-    setSubmitted(true)
+    setIsLoading(true)
+    setError(null)
+    setSearched(true)
+
+    try {
+      const params: Record<string, string> = {}
+      if (filters.city) params.city = filters.city
+      if (filters.state) params.state = filters.state
+      if (filters.minPrice && filters.minPrice > 0) params.minPrice = String(filters.minPrice)
+      if (filters.maxPrice && filters.maxPrice < 1000000) params.maxPrice = String(filters.maxPrice)
+      if (filters.minBedrooms && filters.minBedrooms > 0) params.beds = String(filters.minBedrooms)
+      if (filters.minBathrooms && filters.minBathrooms > 0) params.baths = String(filters.minBathrooms)
+
+      const response = await apiClient.get('/properties/search', { params })
+
+      if (response.data.success) {
+        setResults(response.data.data.properties)
+        setTotal(response.data.data.pagination.total)
+      } else {
+        setResults([])
+        setTotal(0)
+      }
+    } catch (err: any) {
+      setError('Failed to search properties. Please try again.')
+      setResults([])
+      setTotal(0)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleReset = () => {
@@ -37,7 +78,9 @@ export default function PropertySearch() {
       city: '',
       state: '',
     })
-    setSubmitted(false)
+    setSearched(false)
+    setResults([])
+    setError(null)
   }
 
   return (
@@ -52,11 +95,10 @@ export default function PropertySearch() {
         }
       >
         <form onSubmit={handleSearch} className="space-y-6">
-          {/* Location */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Input
               label="City"
-              placeholder="Enter city name"
+              placeholder="e.g., Atlanta, Phoenix, Dallas..."
               value={filters.city || ''}
               onChange={(e) => setFilters({ city: e.target.value })}
             />
@@ -76,7 +118,6 @@ export default function PropertySearch() {
             />
           </div>
 
-          {/* Price Range */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
               label="Min Price"
@@ -94,7 +135,6 @@ export default function PropertySearch() {
             />
           </div>
 
-          {/* Size */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
               label="Min Square Feet"
@@ -112,7 +152,6 @@ export default function PropertySearch() {
             />
           </div>
 
-          {/* Bedrooms and Bathrooms */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Input
               label="Min Beds"
@@ -142,7 +181,6 @@ export default function PropertySearch() {
             />
           </div>
 
-          {/* Property Type */}
           <Select
             label="Property Type"
             options={PROPERTY_TYPES}
@@ -151,9 +189,8 @@ export default function PropertySearch() {
             onChange={(e) => setFilters({ propertyType: e.target.value })}
           />
 
-          {/* Buttons */}
           <div className="flex gap-3 pt-4">
-            <Button variant="primary" type="submit" fullWidth>
+            <Button variant="primary" type="submit" fullWidth loading={isLoading}>
               Search Properties
             </Button>
             <Button variant="secondary" type="button" onClick={handleReset}>
@@ -164,45 +201,55 @@ export default function PropertySearch() {
       </Card>
 
       {/* Results */}
-      {submitted && (
+      {searched && (
         <div className="space-y-4">
           <h2 className="text-xl font-semibold text-white">
-            {isLoading ? 'Loading results...' : `Found ${results?.length || 0} properties`}
+            {isLoading ? 'Searching...' : `Found ${total} properties`}
           </h2>
+
+          {error && (
+            <Card>
+              <p className="text-center text-loss-400 py-4">{error}</p>
+            </Card>
+          )}
 
           {isLoading ? (
             <div className="space-y-3">
-              <Skeleton className="h-32" count={5} />
+              <Skeleton className="h-32" />
+              <Skeleton className="h-32" />
+              <Skeleton className="h-32" />
             </div>
-          ) : results && results.length > 0 ? (
+          ) : results.length > 0 ? (
             <div className="grid gap-4">
-              {results.map((property: any) => (
-                <Link key={property.id} to={`/property/${property.id}`}>
+              {results.map((property) => (
+                <Link key={property.id} to={`/property/${encodeURIComponent(property.id)}`}>
                   <Card hoverable className="cursor-pointer">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+                      {/* Image */}
+                      <div className="md:col-span-1">
+                        <img
+                          src={property.imageUrl}
+                          alt={property.address}
+                          className="w-full h-32 object-cover rounded-lg"
+                        />
+                      </div>
+
                       {/* Main Info */}
                       <div className="md:col-span-2">
                         <h3 className="text-lg font-semibold text-white mb-2">
                           {property.address}
                         </h3>
-                        <div className="flex items-center gap-2 text-gray-400 mb-4">
+                        <div className="flex items-center gap-2 text-gray-400 mb-3">
                           <MapPin size={16} />
                           <span className="text-sm">
                             {property.city}, {property.state} {property.zip}
                           </span>
                         </div>
-                        <div className="space-y-2">
-                          <div className="flex gap-2">
-                            <Badge variant="primary" size="sm">
-                              {property.bedrooms} Bed
-                            </Badge>
-                            <Badge variant="primary" size="sm">
-                              {property.bathrooms} Bath
-                            </Badge>
-                            <Badge variant="primary" size="sm">
-                              {formatSqft(property.squareFeet)}
-                            </Badge>
-                          </div>
+                        <div className="flex gap-2 flex-wrap">
+                          <Badge variant="primary">{property.beds} Bed</Badge>
+                          <Badge variant="primary">{property.baths} Bath</Badge>
+                          <Badge variant="primary">{formatNumber(property.sqft)} sqft</Badge>
+                          <Badge variant="info">{property.type}</Badge>
                         </div>
                       </div>
 
@@ -210,26 +257,25 @@ export default function PropertySearch() {
                       <div className="md:col-span-2">
                         <div className="space-y-3">
                           <div>
-                            <p className="text-gray-400 text-sm font-medium mb-1">List Price</p>
+                            <p className="text-gray-400 text-sm mb-1">List Price</p>
                             <p className="text-2xl font-bold text-accent-500">
                               {formatCurrency(property.price)}
                             </p>
                           </div>
                           <div className="flex justify-between text-sm">
                             <div>
-                              <p className="text-gray-400">Price/Sq Ft</p>
+                              <p className="text-gray-400">$/Sq Ft</p>
                               <p className="text-white font-semibold">
-                                ${(property.price / property.squareFeet).toFixed(0)}
+                                {property.sqft > 0 ? `$${Math.round(property.price / property.sqft)}` : 'N/A'}
                               </p>
                             </div>
                             <div>
                               <p className="text-gray-400">Year Built</p>
-                              <p className="text-white font-semibold">{property.yearBuilt}</p>
+                              <p className="text-white font-semibold">
+                                {property.yearBuilt || 'N/A'}
+                              </p>
                             </div>
                           </div>
-                          <Button variant="secondary" size="sm" fullWidth>
-                            View Details
-                          </Button>
                         </div>
                       </div>
                     </div>
@@ -240,9 +286,12 @@ export default function PropertySearch() {
           ) : (
             <Card>
               <div className="text-center py-8">
-                <Home size={48} className="mx-auto text-gray-400 mb-4" />
-                <p className="text-gray-400">No properties found matching your criteria</p>
-                <Button variant="secondary" className="mt-4" onClick={handleReset}>
+                <Home size={48} className="mx-auto text-gray-500 mb-4" />
+                <p className="text-gray-400 mb-2">No properties found matching your criteria</p>
+                <p className="text-gray-500 text-sm mb-4">
+                  Try searching for: Atlanta, Phoenix, Dallas, Orlando, Memphis, Austin, or other major US cities
+                </p>
+                <Button variant="secondary" onClick={handleReset}>
                   Try Different Filters
                 </Button>
               </div>
