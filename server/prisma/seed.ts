@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, DealType } from '@prisma/client';
 import { getMockFeaturedDeals, getAllMockMarkets } from '../src/services/mockData';
 
 const prisma = new PrismaClient();
@@ -20,7 +20,7 @@ async function main() {
     await prisma.featuredDeal.create({
       data: {
         propertyAddress: deal.address,
-        dealType: deal.dealType as any,
+        dealType: deal.dealType as DealType,
         propertyData: {
           address: deal.address,
           city: deal.city,

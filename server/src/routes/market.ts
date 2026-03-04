@@ -1,11 +1,11 @@
 import { Router, Request, Response } from 'express';
-import { optionalAuthMiddleware } from '../middleware/auth';
+import { optionalAuthMiddleware, AuthenticatedRequest } from '../middleware/auth';
 import { getMockMarketData, getMockMarketComparison } from '../services/mockData';
 
 const router = Router();
 
 // Get market data for a zip code
-router.get('/:zipcode', optionalAuthMiddleware, (req: Request, res: Response) => {
+router.get('/:zipcode', optionalAuthMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const zipCode = req.params.zipcode;
 
@@ -47,7 +47,7 @@ router.get('/:zipcode', optionalAuthMiddleware, (req: Request, res: Response) =>
 });
 
 // Compare multiple markets
-router.get('/compare', optionalAuthMiddleware, (req: Request, res: Response) => {
+router.get('/compare', optionalAuthMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const zipsParam = req.query.zips as string | undefined;
 

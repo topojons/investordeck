@@ -1,6 +1,6 @@
 import { Router, Response } from 'express';
 import { authMiddleware, AuthenticatedRequest } from '../middleware/auth';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, PipelineStage, CalculatorType } from '@prisma/client';
 import { z } from 'zod';
 
 const router = Router();
@@ -113,7 +113,10 @@ router.put('/saved-properties/:id', authMiddleware, async (req: AuthenticatedReq
 
     const updated = await prisma.savedProperty.update({
       where: { id: req.params.id },
-      data,
+      data: {
+        ...data,
+        pipelineStage: data.pipelineStage ? (data.pipelineStage as PipelineStage) : undefined,
+      },
     });
 
     res.json({
@@ -271,7 +274,7 @@ router.post('/deal-analyses', authMiddleware, async (req: AuthenticatedRequest, 
       data: {
         userId: req.user!.userId,
         propertyAddress: data.propertyAddress,
-        calculatorType: data.calculatorType,
+        calculatorType: data.calculatorType as CalculatorType,
         inputs: data.inputs,
         outputs: data.outputs,
       },

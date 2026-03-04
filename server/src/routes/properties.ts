@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { optionalAuthMiddleware } from '../middleware/auth';
+import { optionalAuthMiddleware, AuthenticatedRequest } from '../middleware/auth';
 import {
   getMockProperties,
   getMockPropertyById,
@@ -10,7 +10,7 @@ import {
 const router = Router();
 
 // Search properties
-router.get('/search', optionalAuthMiddleware, (req: Request, res: Response) => {
+router.get('/search', optionalAuthMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
     const limit = Math.min(100, parseInt(req.query.limit as string) || 20);
@@ -44,7 +44,7 @@ router.get('/search', optionalAuthMiddleware, (req: Request, res: Response) => {
 });
 
 // Get featured deals
-router.get('/featured', optionalAuthMiddleware, (req: Request, res: Response) => {
+router.get('/featured', optionalAuthMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const dealType = req.query.type as string | undefined;
     const deals = getMockFeaturedDeals(dealType);
@@ -62,7 +62,7 @@ router.get('/featured', optionalAuthMiddleware, (req: Request, res: Response) =>
 });
 
 // Get property detail
-router.get('/:id', optionalAuthMiddleware, (req: Request, res: Response) => {
+router.get('/:id', optionalAuthMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const property = getMockPropertyById(req.params.id);
 
@@ -84,7 +84,7 @@ router.get('/:id', optionalAuthMiddleware, (req: Request, res: Response) => {
 });
 
 // Get comparable properties
-router.get('/:id/comps', optionalAuthMiddleware, (req: Request, res: Response) => {
+router.get('/:id/comps', optionalAuthMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const radius = parseInt(req.query.radius as string) || 1;
     const months = parseInt(req.query.months as string) || 6;

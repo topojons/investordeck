@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { authMiddleware, AuthenticatedRequest } from '../middleware/auth';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, CalculatorType } from '@prisma/client';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -135,7 +135,7 @@ router.post('/flip', authMiddleware, async (req: AuthenticatedRequest, res: Resp
       data: {
         userId: req.user!.userId,
         propertyAddress: 'Flip Analysis',
-        calculatorType: 'FLIP',
+        calculatorType: 'FLIP' as CalculatorType,
         inputs: data,
         outputs: output,
       },
@@ -227,7 +227,7 @@ router.post('/rental', authMiddleware, async (req: AuthenticatedRequest, res: Re
       data: {
         userId: req.user!.userId,
         propertyAddress: 'Rental Analysis',
-        calculatorType: 'RENTAL',
+        calculatorType: 'RENTAL' as CalculatorType,
         inputs: data,
         outputs: output,
       },
@@ -264,7 +264,7 @@ router.post('/wholesale', authMiddleware, async (req: AuthenticatedRequest, res:
       data: {
         userId: req.user!.userId,
         propertyAddress: 'Wholesale Analysis',
-        calculatorType: 'WHOLESALE',
+        calculatorType: 'WHOLESALE' as CalculatorType,
         inputs: data,
         outputs: output,
       },
@@ -335,7 +335,7 @@ router.post('/brrrr', authMiddleware, async (req: AuthenticatedRequest, res: Res
       data: {
         userId: req.user!.userId,
         propertyAddress: 'BRRRR Analysis',
-        calculatorType: 'BRRRR',
+        calculatorType: 'BRRRR' as CalculatorType,
         inputs: data,
         outputs: output,
       },
@@ -391,7 +391,7 @@ router.post('/mortgage', authMiddleware, async (req: AuthenticatedRequest, res: 
       data: {
         userId: req.user!.userId,
         propertyAddress: 'Mortgage Comparison',
-        calculatorType: 'MORTGAGE',
+        calculatorType: 'MORTGAGE' as CalculatorType,
         inputs: data,
         outputs: output,
       },

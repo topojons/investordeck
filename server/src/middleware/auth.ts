@@ -38,6 +38,7 @@ export const authMiddleware = (
       success: false,
       message: 'Invalid or expired token',
     });
+    return;
   }
 };
 

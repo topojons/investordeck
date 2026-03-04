@@ -24,7 +24,7 @@ export const errorHandler = (
       message: 'Validation error',
       errors: formattedErrors,
     });
-    return;
+    return void 0;
   }
 
   const statusCode = (error as ApiError).statusCode || 500;

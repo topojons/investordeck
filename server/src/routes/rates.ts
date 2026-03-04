@@ -1,11 +1,11 @@
 import { Router, Request, Response } from 'express';
-import { optionalAuthMiddleware } from '../middleware/auth';
+import { optionalAuthMiddleware, AuthenticatedRequest } from '../middleware/auth';
 import { getMockMortgageRates } from '../services/mockData';
 
 const router = Router();
 
 // Get current mortgage rates
-router.get('/mortgage', optionalAuthMiddleware, (req: Request, res: Response) => {
+router.get('/mortgage', optionalAuthMiddleware, (req: AuthenticatedRequest, res: Response) => {
   try {
     const rates = getMockMortgageRates();
 
