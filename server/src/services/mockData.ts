@@ -587,7 +587,16 @@ export const getMockProperties = (
 };
 
 export const getMockPropertyById = (id: string): MockProperty | null => {
-  return mockPropertiesDatabase.find((p) => p.id === id) || null;
+  // Search by ID first, then by partial address match
+  const byId = mockPropertiesDatabase.find((p) => p.id === id);
+  if (byId) return byId;
+
+  const byAddress = mockPropertiesDatabase.find((p) =>
+    p.address.toLowerCase().includes(id.toLowerCase()) ||
+    p.city.toLowerCase().includes(id.toLowerCase()) ||
+    p.zip.includes(id)
+  );
+  return byAddress || null;
 };
 
 export const getMockComps = (
